@@ -7,14 +7,14 @@ import (
 )
 
 func (app *application) routes() http.Handler {
-	// Initialize router
 	router := httprouter.New()
+	router.NotFound = http.HandlerFunc(app.notFoundResponse)
+	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	// Register endpoints
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovieHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.showMovieHandler)
 
-	// Return router
-	return router
+	// Wrap the router with the panic recovery middleware.
+	return app.recoverPanic(router)
 }

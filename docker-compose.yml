@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: gmoapi # Sets the default database name
       POSTGRES_USER: gmoapi # Sets the default user
-      POSTGRES_PASSWORD: pa55word # Sets the password for the default user
+      POSTGRES_PASSWORD: ${GMOAPI_DB_PASSWORD} # Sets the password for the default user
     ports:
       - "5433:5432" # Maps host port 5432 to container port 5432
     volumes:

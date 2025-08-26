@@ -1,9 +1,8 @@
 package main
 
 import (
-	"context"      // New import
-	"database/sql" // New import
-	"flag"
+	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,42 +10,21 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/ucok-man/gmoapi/cmd/api/config"
 )
 
 const version = "1.0.0"
 
-type config struct {
-	port int
-	env  string
-	db   struct {
-		dsn          string
-		maxOpenConns int
-		maxIdleConns int
-		maxIdleTime  time.Duration
-	}
-}
-
 type application struct {
-	config config
+	config config.Config
 	logger *slog.Logger
 }
 
 func main() {
-	var cfg config
+	cfg := config.MustNewConfig()
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
-	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-
-	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
-	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
-	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
-
-	flag.Parse()
-
-	// Initialize logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	// Initialize db connection pool.
 	db, err := openDB(cfg)
 	if err != nil {
 		logger.Error(err.Error())
@@ -62,7 +40,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
@@ -70,30 +48,34 @@ func main() {
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
-	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
+	logger.Info("starting server", "addr", srv.Addr, "env", cfg.Env)
 
 	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
 
-func openDB(cfg config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.db.dsn)
+func MustNewConfig() any {
+	panic("unimplemented")
+}
+
+func openDB(cfg config.Config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://gmoapi:%s@localhost:5433/gmoapi?sslmode=disable", cfg.DB.Password))
 	if err != nil {
 		return nil, err
 	}
 
 	// Set the maximum number of open (in-use + idle) connections in the pool. Note that
 	// passing a value less than or equal to 0 will mean there is no limit.
-	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+	db.SetMaxOpenConns(cfg.DB.MaxOpenConn)
 
 	// Set the maximum number of idle connections in the pool. Again, passing a value
 	// less than or equal to 0 will mean there is no limit.
-	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+	db.SetMaxIdleConns(cfg.DB.MaxIdleConn)
 
 	// Set the maximum idle timeout for connections in the pool. Passing a duration less
 	// than or equal to 0 will mean that connections are not closed due to their idle time.
-	db.SetConnMaxIdleTime(cfg.db.maxIdleTime)
+	db.SetConnMaxIdleTime(cfg.DB.MaxIdleTime)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

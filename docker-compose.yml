@@ -1,0 +1,17 @@
+services:
+  gmoapi_postgres:
+    image: postgres:17 # You can choose a specific PostgreSQL version
+    container_name: gmoapi_postgres
+    environment:
+      POSTGRES_DB: gmoapi # Sets the default database name
+      POSTGRES_USER: gmoapi # Sets the default user
+      POSTGRES_PASSWORD: pa55word # Sets the password for the default user
+    ports:
+      - "5433:5432" # Maps host port 5432 to container port 5432
+    volumes:
+      - gmoapi_postgres_data:/var/lib/postgresql/data # Mounts a named volume for data persistence
+      - ./scripts/pg-container:/docker-entrypoint-initdb.d
+    restart: unless-stopped # Restarts the container unless it is explicitly stopped
+
+volumes:
+  gmoapi_postgres_data: # Defines the named volume for PostgreSQL data

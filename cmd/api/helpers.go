@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"maps"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -41,6 +44,70 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(js)
+
+	return nil
+}
+
+func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+	// Batasi request body maksimal 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1_048_576)
+
+	// Inisialisasi decoder, lalu panggil DisallowUnknownFields()
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	// Decode request body
+	err := dec.Decode(dst)
+	if err != nil {
+		// Mulai triage kalau ada error
+		var syntaxError *json.SyntaxError
+		var unmarshalTypeError *json.UnmarshalTypeError
+		var invalidUnmarshalError *json.InvalidUnmarshalError
+		var maxBytesError *http.MaxBytesError
+
+		switch {
+		// Error syntax JSON
+		case errors.As(err, &syntaxError):
+			return fmt.Errorf("body contains badly-formed JSON (at character %d)", syntaxError.Offset)
+
+		// Error JSON yang terpotong tiba-tiba
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return errors.New("body contains badly-formed JSON")
+
+		// Error tipe data JSON tidak cocok
+		case errors.As(err, &unmarshalTypeError):
+			if unmarshalTypeError.Field != "" {
+				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
+			}
+			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
+
+		// Body kosong
+		case errors.Is(err, io.EOF):
+			return errors.New("body must not be empty")
+
+			// Handle unknown fields
+		case strings.HasPrefix(err.Error(), "json: unknown field "):
+			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
+			return fmt.Errorf("body contains unknown key %s", fieldName)
+
+		// Handle body terlalu besar
+		case errors.As(err, &maxBytesError):
+			return fmt.Errorf("body must not be larger than %d bytes", maxBytesError.Limit)
+
+		// Error internal karena salah kode developer
+		case errors.As(err, &invalidUnmarshalError):
+			panic(err)
+		}
+
+		// Default → kembalikan error asli
+		return err
+	}
+
+	// Decode lagi untuk cek data tambahan
+	err = dec.Decode(&struct{}{})
+	if !errors.Is(err, io.EOF) {
+		return errors.New("body must only contain a single JSON value")
+	}
 
 	return nil
 }

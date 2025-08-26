@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ucok-man/gmoapi/internal/data"
+	"github.com/ucok-man/gmoapi/internal/validator"
 )
 
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,5 +32,36 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "create movie \n")
+	var input struct {
+		Title   string       `json:"title"`
+		Year    int32        `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+		Genres  []string     `json:"genres"`
+	}
+
+	// Gunakan readJSON()
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Copy input ke Movie struct
+	movie := &data.Movie{
+		Title:   input.Title,
+		Year:    input.Year,
+		Runtime: input.Runtime,
+		Genres:  input.Genres,
+	}
+
+	// Initialize validator
+	v := validator.New()
+
+	// Panggil ValidateMovie
+	if data.ValidateMovie(v, movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
 }

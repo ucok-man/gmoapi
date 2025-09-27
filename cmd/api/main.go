@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/ucok-man/gmoapi/cmd/api/config"
+	"github.com/ucok-man/gmoapi/internal/data"
 )
 
 const version = "1.0.0"
@@ -18,6 +19,7 @@ const version = "1.0.0"
 type application struct {
 	config config.Config
 	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
@@ -37,6 +39,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
@@ -55,12 +58,8 @@ func main() {
 	os.Exit(1)
 }
 
-func MustNewConfig() any {
-	panic("unimplemented")
-}
-
 func openDB(cfg config.Config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://gmoapi:%s@localhost:5433/gmoapi?sslmode=disable", cfg.DB.Password))
+	db, err := sql.Open("postgres", cfg.DB.DSN)
 	if err != nil {
 		return nil, err
 	}

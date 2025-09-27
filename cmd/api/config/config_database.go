@@ -1,38 +1,36 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"time"
 )
 
-// DatabaseConfig holds database-related configuration
 type DatabaseConfig struct {
-	Password    string        `env:"GMOAPI_DB_PASSWORD"`
+	DSN         string        `env:"GMOAPI_DB_DSN"`
 	MaxOpenConn int           `env:"GMOAPI_DB_MAX_OPEN_CONN" envDefault:"25"`
 	MaxIdleConn int           `env:"GMOAPI_DB_MAX_IDLE_CONN" envDefault:"25"`
 	MaxIdleTime time.Duration `env:"GMOAPI_DB_MAX_IDLE_TIME" envDefault:"15m"`
 }
 
-// Validate validates the database configuration
 func (d *DatabaseConfig) Validate() error {
-	if d.Password == "" {
-		return ErrMissingDBPassword
+	if d.DSN == "" {
+		return errors.New("database connection string is required")
 	}
 
 	if d.MaxOpenConn < 1 {
-		return fmt.Errorf("%w: max open connections must be at least 1", ErrInvalidDBConfig)
+		return errors.New("max open connections must be at least 1")
 	}
 
 	if d.MaxIdleConn < 0 {
-		return fmt.Errorf("%w: max idle connections cannot be negative", ErrInvalidDBConfig)
+		return errors.New("max idle connections cannot be negative")
 	}
 
 	if d.MaxIdleConn > d.MaxOpenConn {
-		return fmt.Errorf("%w: max idle connections cannot exceed max open connections", ErrInvalidDBConfig)
+		return errors.New("max idle connections cannot exceed max open connections")
 	}
 
 	if d.MaxIdleTime < 0 {
-		return fmt.Errorf("%w: max idle time cannot be negative", ErrInvalidDBConfig)
+		return errors.New("max idle time cannot be negative")
 	}
 
 	return nil

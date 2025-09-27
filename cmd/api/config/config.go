@@ -12,14 +12,6 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-// Configuration errors
-var (
-	ErrInvalidEnvironment = errors.New("invalid environment: must be one of (development|staging|production)")
-	ErrMissingDBPassword  = errors.New("database password is required")
-	ErrInvalidPort        = errors.New("port must be between 1 and 65535")
-	ErrInvalidDBConfig    = errors.New("invalid database configuration")
-)
-
 // Config represents the application configuration
 type Config struct {
 	Port int         `env:"GMOAPI_PORT" envDefault:"4000"`
@@ -31,26 +23,20 @@ type Config struct {
 func (c *Config) Validate() error {
 	// Validate port
 	if c.Port < 1 || c.Port > 65535 {
-		return fmt.Errorf("%w: got %d", ErrInvalidPort, c.Port)
+		return errors.New("port must be between 1 and 65535")
 	}
 
 	// Validate environment
 	if !c.Env.IsValid() {
-		return fmt.Errorf("%w: got %q", ErrInvalidEnvironment, c.Env)
+		return errors.New("invalid environment: must be one of (development|staging|production)")
 	}
 
 	// Validate database configuration
 	if err := c.DB.Validate(); err != nil {
-		return fmt.Errorf("database configuration error: %w", err)
+		return err
 	}
 
 	return nil
-}
-
-// String returns a string representation of the configuration (without sensitive data)
-func (c *Config) String() string {
-	return fmt.Sprintf("Config{Port: %d, Env: %s, DB: {MaxOpenConn: %d, MaxIdleConn: %d, MaxIdleTime: %s, Password: [REDACTED]}}",
-		c.Port, c.Env, c.DB.MaxOpenConn, c.DB.MaxIdleConn, c.DB.MaxIdleTime)
 }
 
 // NewConfig creates and validates a new configuration instance
@@ -67,12 +53,12 @@ func NewConfig() (Config, error) {
 	flag.Func("env", "Environment (development|staging|production)", func(s string) error {
 		env := Environment(strings.TrimSpace(strings.ToLower(s)))
 		if !env.IsValid() {
-			return fmt.Errorf("%w: got %q", ErrInvalidEnvironment, s)
+			return errors.New("invalid environment: must be one of (development|staging|production)")
 		}
 		cfg.Env = env
 		return nil
 	})
-	flag.StringVar(&cfg.DB.Password, "db-password", cfg.DB.Password, "PostgreSQL database password")
+	flag.StringVar(&cfg.DB.DSN, "db-dsn", cfg.DB.DSN, "PostgreSQL connection string")
 	flag.IntVar(&cfg.DB.MaxOpenConn, "db-max-open-conn", cfg.DB.MaxOpenConn, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.DB.MaxIdleConn, "db-max-idle-conn", cfg.DB.MaxIdleConn, "PostgreSQL max idle connections")
 	flag.DurationVar(&cfg.DB.MaxIdleTime, "db-max-idle-time", cfg.DB.MaxIdleTime, "PostgreSQL max connection idle time")
@@ -82,7 +68,7 @@ func NewConfig() (Config, error) {
 
 	// Validate the configuration
 	if err := cfg.Validate(); err != nil {
-		return cfg, fmt.Errorf("configuration validation failed: %w", err)
+		return cfg, err
 	}
 
 	return cfg, nil
@@ -105,12 +91,12 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Configuration can be provided via environment variables or command-line flags.\n")
 	fmt.Fprintf(os.Stderr, "Command-line flags override environment variables.\n\n")
 	fmt.Fprintf(os.Stderr, "Environment Variables:\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_PORT                 - API server port (default: 4000)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_ENV                  - Environment (default: development)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_PASSWORD          - Database password (required)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_OPEN_CONN     - Max open database connections (default: 25)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_CONN     - Max idle database connections (default: 25)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_TIME     - Max database connection idle time (default: 15m)\n\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_PORT                   - API server port (default: 4000)\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_ENV                    - Environment (default: development)\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_DSN                 - PostgreSQL connection string (required)\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_OPEN_CONN       - Max open database connections (default: 25)\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_CONN       - Max idle database connections (default: 25)\n")
+	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_TIME       - Max database connection idle time (default: 15m)\n\n")
 	fmt.Fprintf(os.Stderr, "Command-line Flags:\n")
 	flag.PrintDefaults()
 }

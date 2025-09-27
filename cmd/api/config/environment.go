@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"slices"
 	"strings"
 )
@@ -43,7 +43,7 @@ func (e *Environment) UnmarshalText(value []byte) error {
 	env := Environment(input)
 
 	if !env.IsValid() {
-		return fmt.Errorf("%w: got %q", ErrInvalidEnvironment, input)
+		return errors.New("invalid environment: must be one of (development|staging|production)")
 	}
 
 	*e = env

@@ -45,6 +45,12 @@ func (app *application) serve() error {
 		// because the shutdown didn't complete before the 30-second context deadline is hit).
 		// We relay this return value to the shutdownError channel.
 		shutdownError <- srv.Shutdown(ctx)
+
+		app.logger.Info("completing background tasks", "addr", srv.Addr)
+
+		// Call Wait() to block until our WaitGroup counter is zero.
+		app.wg.Wait()
+		shutdownError <- nil
 	}()
 
 	app.logger.Info("starting server", "addr", srv.Addr, "env", app.config.Env)
@@ -66,9 +72,7 @@ func (app *application) serve() error {
 		return err
 	}
 
-	// At this point we know that the graceful shutdown completed successfully and we
-	// log a "stopped server" message.
+	// At this point we know that the graceful shutdown completed successfully
 	app.logger.Info("stopped server", "addr", srv.Addr)
-
 	return nil
 }

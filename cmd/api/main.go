@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/ucok-man/gmoapi/cmd/api/config"
 	"github.com/ucok-man/gmoapi/internal/data"
+	"github.com/ucok-man/gmoapi/internal/mailer"
 )
 
 const version = "1.0.0"
@@ -18,6 +20,8 @@ type application struct {
 	config config.Config
 	logger *slog.Logger
 	models data.Models
+	mailer *mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -34,10 +38,17 @@ func main() {
 
 	logger.Info("database connection pool established")
 
+	mailer, err := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	app := &application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer,
 	}
 
 	err = app.serve()

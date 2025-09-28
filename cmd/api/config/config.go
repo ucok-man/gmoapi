@@ -14,9 +14,10 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Port int         `env:"GMOAPI_PORT" envDefault:"4000"`
-	Env  Environment `env:"GMOAPI_ENV" envDefault:"development"`
-	DB   DatabaseConfig
+	Port    int         `env:"GMOAPI_PORT" envDefault:"4000"`
+	Env     Environment `env:"GMOAPI_ENV" envDefault:"development"`
+	DB      DatabaseConfig
+	Limiter LimiterConfig
 }
 
 // Validate validates the entire configuration
@@ -36,6 +37,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	// Validate limiter configuration
+	if err := c.Limiter.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -49,7 +55,7 @@ func NewConfig() (Config, error) {
 	}
 
 	// Define command-line flags
-	flag.IntVar(&cfg.Port, "port", cfg.Port, "API server port (1-65535)")
+	flag.IntVar(&cfg.Port, "port", cfg.Port, "API server port")
 	flag.Func("env", "Environment (development|staging|production)", func(s string) error {
 		env := Environment(strings.TrimSpace(strings.ToLower(s)))
 		if !env.IsValid() {
@@ -58,10 +64,28 @@ func NewConfig() (Config, error) {
 		cfg.Env = env
 		return nil
 	})
+
 	flag.StringVar(&cfg.DB.DSN, "db-dsn", cfg.DB.DSN, "PostgreSQL connection string")
 	flag.IntVar(&cfg.DB.MaxOpenConn, "db-max-open-conn", cfg.DB.MaxOpenConn, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.DB.MaxIdleConn, "db-max-idle-conn", cfg.DB.MaxIdleConn, "PostgreSQL max idle connections")
 	flag.DurationVar(&cfg.DB.MaxIdleTime, "db-max-idle-time", cfg.DB.MaxIdleTime, "PostgreSQL max connection idle time")
+
+	flag.Float64Var(&cfg.Limiter.Rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
+	flag.IntVar(&cfg.Limiter.Burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.BoolVar(&cfg.Limiter.Enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Configuration can be provided via environment variables or command-line flags.\n")
+		fmt.Fprintf(os.Stderr, "Command-line flags override environment variables.\n\n")
+		fmt.Fprintf(os.Stderr, "Environment Variables:\n")
+		fmt.Fprintf(os.Stderr, "  - To define environment variable use prefix GMOAPI.\n")
+		fmt.Fprintf(os.Stderr, "  - The expected form is <PREFIX_FLAG_NAME> all in uppercase.\n")
+		fmt.Fprintf(os.Stderr, "  - ex: GMOAPI_PORT, GMOAPI_DB_MAX_OPEN_CONN.\n\n")
+
+		fmt.Fprintf(os.Stderr, "Command-line Flags:\n")
+		flag.PrintDefaults()
+	}
 
 	// Parse command-line flags
 	flag.Parse()
@@ -79,24 +103,8 @@ func MustNewConfig() Config {
 	cfg, err := NewConfig()
 	if err != nil {
 		log.Printf("Configuration error: %v", err)
-		printUsage()
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
 	return cfg
-}
-
-// printUsage prints usage information and available flags
-func printUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "Configuration can be provided via environment variables or command-line flags.\n")
-	fmt.Fprintf(os.Stderr, "Command-line flags override environment variables.\n\n")
-	fmt.Fprintf(os.Stderr, "Environment Variables:\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_PORT                   - API server port (default: 4000)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_ENV                    - Environment (default: development)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_DSN                 - PostgreSQL connection string (required)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_OPEN_CONN       - Max open database connections (default: 25)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_CONN       - Max idle database connections (default: 25)\n")
-	fmt.Fprintf(os.Stderr, "  GMOAPI_DB_MAX_IDLE_TIME       - Max database connection idle time (default: 15m)\n\n")
-	fmt.Fprintf(os.Stderr, "Command-line Flags:\n")
-	flag.PrintDefaults()
 }

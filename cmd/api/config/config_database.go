@@ -12,24 +12,24 @@ type DatabaseConfig struct {
 	MaxIdleTime time.Duration `env:"GMOAPI_DB_MAX_IDLE_TIME" envDefault:"15m"`
 }
 
-func (d *DatabaseConfig) Validate() error {
-	if d.DSN == "" {
+func (c *DatabaseConfig) Validate() error {
+	if c.DSN == "" {
 		return errors.New("database connection string is required")
 	}
 
-	if d.MaxOpenConn < 1 {
+	if c.MaxOpenConn < 1 {
 		return errors.New("max open connections must be at least 1")
 	}
 
-	if d.MaxIdleConn < 0 {
+	if c.MaxIdleConn < 0 {
 		return errors.New("max idle connections cannot be negative")
 	}
 
-	if d.MaxIdleConn > d.MaxOpenConn {
+	if c.MaxIdleConn > c.MaxOpenConn {
 		return errors.New("max idle connections cannot exceed max open connections")
 	}
 
-	if d.MaxIdleTime < 0 {
+	if c.MaxIdleTime < 0 {
 		return errors.New("max idle time cannot be negative")
 	}
 

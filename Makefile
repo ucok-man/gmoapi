@@ -1,5 +1,5 @@
-# Include env variables
-include .env
+# Include .env if exists
+-include .env
 
 # ------------------------------------------------------------------ #
 #                               HELPERS                              #

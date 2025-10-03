@@ -10,7 +10,10 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/ucok-man/gmoapi/vcs"
 )
+
+var APP_VERSION = vcs.Version()
 
 // Config represents the application configuration
 type Config struct {
@@ -92,6 +95,9 @@ func NewConfig() (Config, error) {
 		return nil
 	})
 
+	// Create a new version boolean flag with the default value of false.
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Configuration can be provided via environment variables or command-line flags.\n")
@@ -107,6 +113,13 @@ func NewConfig() (Config, error) {
 
 	// Parse command-line flags
 	flag.Parse()
+
+	// If the version flag value is true, then print out the version number and
+	// immediately exit.
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", APP_VERSION)
+		os.Exit(0)
+	}
 
 	// Validate the configuration
 	if err := cfg.Validate(); err != nil {

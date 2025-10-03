@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/ucok-man/gmoapi/cmd/api/config"
 )
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -9,7 +11,7 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 		"status": "available",
 		"system_info": map[string]any{
 			"environment": app.config.Env,
-			"version":     version,
+			"version":     config.APP_VERSION,
 		},
 	}
 

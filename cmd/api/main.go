@@ -16,8 +16,6 @@ import (
 	"github.com/ucok-man/gmoapi/internal/mailer"
 )
 
-const version = "1.0.0"
-
 type application struct {
 	config config.Config
 	logger *slog.Logger
@@ -46,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	expvar.NewString("version").Set(version)
+	expvar.NewString("version").Set(config.APP_VERSION)
 
 	// Publish the number of active goroutines.
 	expvar.Publish("goroutines", expvar.Func(func() any {

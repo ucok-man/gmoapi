@@ -17,8 +17,10 @@ var APP_VERSION = vcs.Version()
 
 // Config represents the application configuration
 type Config struct {
-	Port    int         `env:"GMOAPI_PORT" envDefault:"4000"`
-	Env     Environment `env:"GMOAPI_ENV" envDefault:"development"`
+	Host string      `env:"GMOAPI_HOST" envDefault:"localhost"`
+	Port int         `env:"GMOAPI_PORT" envDefault:"4000"`
+	Env  Environment `env:"GMOAPI_ENV" envDefault:"development"`
+
 	DB      DatabaseConfig
 	Limiter LimiterConfig
 	SMTP    SMTPConfig

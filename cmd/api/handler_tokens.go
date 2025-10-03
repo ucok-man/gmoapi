@@ -9,6 +9,23 @@ import (
 	"github.com/ucok-man/gmoapi/internal/validator"
 )
 
+// @Summary      Generate Authentication Token
+// @Description  Generate a bearer token for authentication. The token is valid for 24 hours and must be included in the Authorization header for protected endpoints.
+// @Description
+// @Description  **Usage:** Include the token in subsequent requests as: `Authorization: Bearer {token}`
+// @Description
+// @Description  **Token Lifetime:** 24 hours
+// @Tags         Tokens
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      object{email=string, password=string}  true  "User login credentials"
+// @Success      201  {object}  object{authentication_token=object{token=string, expiry=string}}  "Token generated successfully"
+// @Failure      400  {object}  object{error=string}  "Bad request - malformed JSON"
+// @Failure      401  {object}  object{error=string}  "Unauthorized - invalid email or password"
+// @Failure      422  {object}  object{error=map[string]string}  "Unprocessable entity - validation errors"
+// @Failure      429  {object}  object{error=string}  "Too many requests - rate limit exceeded"
+// @Failure      500  {object}  object{error=string}  "Internal server error"
+// @Router       /tokens/authentication [post]
 func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the email and password from the request body.
 	var input struct {
@@ -72,6 +89,22 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 	}
 }
 
+// @Summary      Request Password Reset Token
+// @Description  Request a password reset token to be sent via email. The token is valid for 45 minutes and can only be used once. The user account must be activated to receive a reset token.
+// @Description
+// @Description  **Email Delivery:** Token is sent to the email address registered in the system (not the one provided in request).
+// @Description
+// @Description  **Token Lifetime:** 45 minutes
+// @Tags         Tokens
+// @Accept       json
+// @Produce      json
+// @Param        email  body      object{email=string}  true  "User email address"
+// @Success      202  {object}  object{message=string}  "Password reset email will be sent"
+// @Failure      400  {object}  object{error=string}  "Bad request - malformed JSON"
+// @Failure      422  {object}  object{error=map[string]string}  "Unprocessable entity - email not found or account not activated"
+// @Failure      429  {object}  object{error=string}  "Too many requests - rate limit exceeded"
+// @Failure      500  {object}  object{error=string}  "Internal server error"
+// @Router       /tokens/password-reset [post]
 func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate the user's email address.
 	var input struct {
@@ -135,6 +168,22 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 	}
 }
 
+// @Summary      Resend Activation Token
+// @Description  Request a new activation token to be sent via email. Useful if the original token expired or was lost. The token is valid for 3 days. This endpoint cannot be used if the account is already activated.
+// @Description
+// @Description  **Email Delivery:** Token is sent to the email address registered in the system (not the one provided in request).
+// @Description
+// @Description  **Token Lifetime:** 3 days
+// @Tags         Tokens
+// @Accept       json
+// @Produce      json
+// @Param        email  body      object{email=string}  true  "User email address"
+// @Success      202  {object}  object{message=string}  "Activation email will be sent"
+// @Failure      400  {object}  object{error=string}  "Bad request - malformed JSON"
+// @Failure      422  {object}  object{error=map[string]string}  "Unprocessable entity - email not found or already activated"
+// @Failure      429  {object}  object{error=string}  "Too many requests - rate limit exceeded"
+// @Failure      500  {object}  object{error=string}  "Internal server error"
+// @Router       /tokens/activation [post]
 func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate the user's email address.
 	var input struct {

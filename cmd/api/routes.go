@@ -2,6 +2,7 @@ package main
 
 import (
 	"expvar"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -29,9 +30,15 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/password-reset", app.createPasswordResetTokenHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationTokenHandler)
 
-	router.HandlerFunc(http.MethodGet, "/swagger/*all", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:4000/swagger/doc.json"), //The url pointing to API definition
-	))
+	router.HandlerFunc(http.MethodGet, "/swagger/*all", func(w http.ResponseWriter, r *http.Request) {
+		url := fmt.Sprintf("https://%s/swagger/doc.json", app.config.Host)
+		if app.config.Env == "development" {
+			url = fmt.Sprintf("http://%s:%d/swagger/doc.json", app.config.Host, app.config.Port)
+		}
+		httpSwagger.Handler(
+			httpSwagger.URL(url), //The url pointing to API definition
+		).ServeHTTP(w, r)
+	})
 
 	router.Handler(
 		http.MethodGet,

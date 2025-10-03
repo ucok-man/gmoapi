@@ -26,20 +26,54 @@ type application struct {
 	wg     sync.WaitGroup
 }
 
-// @title Swagger Example API
-// @version 1.0
-// @description This is a sample server Petstore server.
-// @termsOfService http://swagger.io/terms/
+// @title           Gmoapi - Movie Management API
+// @version         1.0.1
+// @description     A production-ready RESTful API for managing movies with comprehensive user authentication, role-based authorization, rate limiting, and email notifications.
+// @description
+// @description     ## Features
+// @description     - Full CRUD operations for movies
+// @description     - User registration and authentication
+// @description     - Role-based access control (RBAC)
+// @description     - Token-based authentication (Bearer)
+// @description     - Email verification and password reset
+// @description     - Rate limiting (2 req/s, burst: 4)
+// @description     - Pagination and filtering
+// @description     - CORS support
+// @description
+// @description     ## Authentication
+// @description     Most endpoints require authentication. Use the `/v1/tokens/authentication` endpoint to obtain a token, then include it in the Authorization header as: `Bearer YOUR_TOKEN`
+// @description
+// @description     ## Rate Limiting
+// @description     API requests are rate-limited to 2 requests per second with a burst of 4 requests.
 
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
+// @contact.name   ucokman
+// @contact.url    https://github.com/ucok-man/gmoapi
+// @contact.email  support@ucokman.web.id
 
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host petstore.swagger.io
-// @BasePath /v2
+// @host      localhost:4000
+// @BasePath  /v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter your bearer token in the format: Bearer {token}
+
+// @tag.name Health
+// @tag.description System health check and version information
+
+// @tag.name Movies
+// @tag.description Movie catalog management - requires authentication and appropriate permissions
+
+// @tag.name Users
+// @tag.description User account registration, activation, and password management
+
+// @tag.name Tokens
+// @tag.description Token generation for authentication, activation, and password reset
+
+// @x-extension-openapi {"example": "value"}
 func main() {
 	cfg := config.MustNewConfig()
 

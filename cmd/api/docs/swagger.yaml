@@ -1,16 +1,832 @@
-basePath: /v2
-host: petstore.swagger.io
+basePath: /v1
+definitions:
+  data.Metadata:
+    properties:
+      current_page:
+        type: integer
+      first_page:
+        type: integer
+      last_page:
+        type: integer
+      page_size:
+        type: integer
+      total_records:
+        type: integer
+    type: object
+  data.Movie:
+    properties:
+      genres:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      runtime:
+        type: integer
+      title:
+        type: string
+      version:
+        description: |-
+          The version number starts at 1 and will be incremented
+          each time the movie information is updated
+        type: integer
+      year:
+        type: integer
+    type: object
+host: localhost:4000
 info:
   contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server Petstore server.
+    email: support@gmoapi.ucokman.web.id
+    name: API Support Team
+    url: https://github.com/ucok-man/gmoapi
+  description: |-
+    A production-ready RESTful API for managing movies with comprehensive user authentication, role-based authorization, rate limiting, and email notifications.
+
+    ## Features
+    - Full CRUD operations for movies
+    - User registration and authentication
+    - Role-based access control (RBAC)
+    - Token-based authentication (Bearer)
+    - Email verification and password reset
+    - Rate limiting (2 req/s, burst: 4)
+    - Pagination and filtering
+    - CORS support
+
+    ## Authentication
+    Most endpoints require authentication. Use the `/v1/tokens/authentication` endpoint to obtain a token, then include it in the Authorization header as: `Bearer YOUR_TOKEN`
+
+    ## Rate Limiting
+    API requests are rate-limited to 2 requests per second with a burst of 4 requests.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Swagger Example API
+  title: Gmoapi - Movie Management API
   version: "1.0"
-paths: {}
+paths:
+  /:
+    get:
+      description: Returns the API health status, environment, and version information.
+        This endpoint does not require authentication and can be used for monitoring.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API is healthy and operational
+          schema:
+            properties:
+              ' system_info':
+                properties:
+                  ' version':
+                    type: string
+                  environment:
+                    type: string
+                type: object
+              status:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: System Health Check
+      tags:
+      - Health
+  /movies:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieve a paginated list of movies with optional filtering by title (full-text search) and genres. Supports sorting by multiple fields.
+
+        **Permissions Required:** `movies:read`
+
+        **Filtering:**
+        - Title: Partial match using PostgreSQL full-text search
+        - Genres: Multiple genres can be specified (comma-separated)
+
+        **Sorting:**
+        - Prefix with `-` for descending order (e.g., `-year`)
+        - Available fields: id, title, year, runtime
+      parameters:
+      - description: Filter by movie title (partial match, case-insensitive)
+        example: Godfather
+        in: query
+        name: title
+        type: string
+      - description: Filter by genres (comma-separated)
+        example: drama,crime
+        in: query
+        name: genres
+        type: string
+      - default: 1
+        description: 'Page number (minimum: 1, maximum: 10,000,000)'
+        in: query
+        maximum: 10000000
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: 'Items per page (minimum: 1, maximum: 100)'
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      - default: id
+        description: Sort field
+        enum:
+        - id
+        - title
+        - year
+        - runtime
+        - -id
+        - -title
+        - -year
+        - -runtime
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of movies with pagination metadata
+          schema:
+            properties:
+              ' metadata':
+                $ref: '#/definitions/data.Metadata'
+              movies:
+                items:
+                  $ref: '#/definitions/data.Movie'
+                type: array
+            type: object
+        "400":
+          description: Bad request - invalid query parameters
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid authentication token
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Forbidden - user account not activated or insufficient permissions
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - validation errors
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List All Movies
+      tags:
+      - Movies
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Create a new movie entry in the catalog. All fields are required.
+
+        **Permissions Required:** `movies:write`
+
+        **Validation Rules:**
+        - Title: Required, max 500 characters
+        - Year: Required, between 1888 and current year
+        - Runtime: Required, positive integer, format "123 mins"
+        - Genres: Required, 1-5 unique genres
+      parameters:
+      - description: Movie creation data
+        in: body
+        name: movie
+        required: true
+        schema:
+          properties:
+            ' genres':
+              items:
+                type: string
+              type: array
+            ' runtime':
+              type: string
+            ' year':
+              format: int32
+              type: integer
+            title:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Movie created successfully
+          headers:
+            Location:
+              description: URL of the created movie
+              type: string
+          schema:
+            properties:
+              movie:
+                $ref: '#/definitions/data.Movie'
+            type: object
+        "400":
+          description: Bad request - malformed JSON or invalid data types
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid authentication token
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Forbidden - user account not activated or insufficient permissions
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - validation errors
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create New Movie
+      tags:
+      - Movies
+  /movies/{id}:
+    delete:
+      description: |-
+        Permanently delete a movie from the catalog by its ID. This action cannot be undone.
+
+        **Permissions Required:** `movies:write`
+      parameters:
+      - description: Movie ID
+        example: 1
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movie deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid authentication token
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Forbidden - user account not activated or insufficient permissions
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Movie not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete Movie
+      tags:
+      - Movies
+  /tokens/activation:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Request a new activation token to be sent via email. Useful if the original token expired or was lost. The token is valid for 3 days. This endpoint cannot be used if the account is already activated.
+
+        **Email Delivery:** Token is sent to the email address registered in the system (not the one provided in request).
+
+        **Token Lifetime:** 3 days
+      parameters:
+      - description: User email address
+        in: body
+        name: email
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Activation email will be sent
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad request - malformed JSON
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - email not found or already activated
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Resend Activation Token
+      tags:
+      - Tokens
+  /tokens/authentication:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Generate a bearer token for authentication. The token is valid for 24 hours and must be included in the Authorization header for protected endpoints.
+
+        **Usage:** Include the token in subsequent requests as: `Authorization: Bearer {token}`
+
+        **Token Lifetime:** 24 hours
+      parameters:
+      - description: User login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          properties:
+            ' password':
+              type: string
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Token generated successfully
+          schema:
+            properties:
+              authentication_token:
+                properties:
+                  ' expiry':
+                    type: string
+                  token:
+                    type: string
+                type: object
+            type: object
+        "400":
+          description: Bad request - malformed JSON
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - invalid email or password
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - validation errors
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Generate Authentication Token
+      tags:
+      - Tokens
+  /tokens/password-reset:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Request a password reset token to be sent via email. The token is valid for 45 minutes and can only be used once. The user account must be activated to receive a reset token.
+
+        **Email Delivery:** Token is sent to the email address registered in the system (not the one provided in request).
+
+        **Token Lifetime:** 45 minutes
+      parameters:
+      - description: User email address
+        in: body
+        name: email
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Password reset email will be sent
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad request - malformed JSON
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - email not found or account not activated
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Request Password Reset Token
+      tags:
+      - Tokens
+  /users/activated:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Activate a user account using the token received via email. The token is single-use and expires after 3 days. Once activated, all activation tokens for this user are deleted.
+
+        **Token Format:** 26-character alphanumeric string
+      parameters:
+      - description: Activation token (26 characters)
+        in: body
+        name: token
+        required: true
+        schema:
+          properties:
+            token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account activated successfully
+          schema:
+            properties:
+              user:
+                properties:
+                  ' activated':
+                    type: boolean
+                  ' created_at':
+                    type: string
+                  ' email':
+                    type: string
+                  ' name':
+                    type: string
+                  id:
+                    format: int64
+                    type: integer
+                type: object
+            type: object
+        "400":
+          description: Bad request - malformed JSON
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "409":
+          description: Conflict - account has been modified during activation
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - invalid or expired token
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Activate User Account
+      tags:
+      - Users
+  /users/password:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Reset a user's password using a password reset token. The token must be obtained via the `/v1/tokens/password-reset` endpoint and is valid for 45 minutes. Once used, all password reset tokens for this user are deleted.
+
+        **Validation Rules:**
+        - Password: Required, 8-72 characters
+        - Token: Required, 26-character alphanumeric string
+      parameters:
+      - description: New password and reset token
+        in: body
+        name: data
+        required: true
+        schema:
+          properties:
+            ' token':
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad request - malformed JSON
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "409":
+          description: Conflict - account has been modified during password reset
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - invalid/expired token or weak password
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Reset User Password
+      tags:
+      - Users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Register a new user account. Upon successful registration, an activation email will be sent containing a token valid for 3 days. The account must be activated before it can be used.
+
+        **Validation Rules:**
+        - Name: Required, max 500 characters
+        - Email: Required, valid email format, must be unique
+        - Password: Required, 8-72 characters
+
+        **Default Permissions:** New users receive `movies:read` permission by default.
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          properties:
+            ' email':
+              type: string
+            ' password':
+              type: string
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Registration successful - activation email sent
+          schema:
+            properties:
+              ' user':
+                properties:
+                  ' activated':
+                    type: boolean
+                  ' created_at':
+                    type: string
+                  ' email':
+                    type: string
+                  ' name':
+                    type: string
+                  id:
+                    format: int64
+                    type: integer
+                type: object
+              message:
+                type: string
+            type: object
+        "400":
+          description: Bad request - malformed JSON or invalid data types
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - validation errors (e.g., duplicate email,
+            weak password)
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Register New User
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter your bearer token in the format: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
+tags:
+- description: System health check and version information
+  name: Health
+- description: Movie catalog management - requires authentication and appropriate
+    permissions
+  name: Movies
+- description: User account registration, activation, and password management
+  name: Users
+- description: Token generation for authentication, activation, and password reset
+  name: Tokens
+x-extension-openapi:
+  example: value

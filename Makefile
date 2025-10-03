@@ -36,7 +36,7 @@ start:
 .PHONY: swag
 swag:
 	@echo 'generating swagger docs...'
-	@swag init -d cmd/api -o ./cmd/api/docs
+	@swag init -g cmd/api/main.go  -o ./cmd/api/docs
 
 # ==================================================================================== #
 # QUALITY CONTROL

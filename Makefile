@@ -26,6 +26,12 @@ build:
 	@echo 'Building cmd/api...'
 	go build -ldflags='-s' -o=./bin/api ./cmd/api/
 
+## start: start build artifact in bin/
+.PHONY: start
+start:
+	@echo 'starting bin/api...'
+	@./bin/api
+
 # ==================================================================================== #
 # QUALITY CONTROL
 # ==================================================================================== #

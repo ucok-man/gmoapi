@@ -90,7 +90,6 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 // @Failure      429  {object}  object{error=string}  "Too many requests - rate limit exceeded"
 // @Failure      500  {object}  object{error=string}  "Internal server error"
 // @Router       /movies/{id} [get]
-
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -208,7 +207,6 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 // @Failure      429  {object}  object{error=string}  "Too many requests - rate limit exceeded"
 // @Failure      500  {object}  object{error=string}  "Internal server error"
 // @Router       /movies/{id} [patch]
-
 func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {

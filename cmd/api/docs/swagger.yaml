@@ -36,8 +36,8 @@ definitions:
 host: localhost:4000
 info:
   contact:
-    email: support@gmoapi.ucokman.web.id
-    name: API Support Team
+    email: support@ucokman.web.id
+    name: ucokman
     url: https://github.com/ucok-man/gmoapi
   description: |-
     A production-ready RESTful API for managing movies with comprehensive user authentication, role-based authorization, rate limiting, and email notifications.
@@ -369,6 +369,179 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete Movie
+      tags:
+      - Movies
+    get:
+      description: |-
+        Retrieve detailed information about a specific movie by its unique ID.
+
+        **Permissions Required:** `movies:read`
+      parameters:
+      - description: Movie ID
+        example: 1
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movie details
+          schema:
+            properties:
+              movie:
+                $ref: '#/definitions/data.Movie'
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid authentication token
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Forbidden - user account not activated or insufficient permissions
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Movie not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Movie by ID
+      tags:
+      - Movies
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Update an existing movie using partial update (PATCH). Only provided fields will be updated. Uses optimistic locking to prevent concurrent modification conflicts.
+
+        **Permissions Required:** `movies:write`
+
+        **Validation Rules:** Same as create operation
+
+        **Concurrency Control:** Uses version field for optimistic locking. If the movie has been modified by another request, a 409 Conflict will be returned.
+      parameters:
+      - description: Movie ID
+        example: 1
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Movie update data (all fields optional)
+        in: body
+        name: movie
+        required: true
+        schema:
+          properties:
+            ' genres':
+              items:
+                type: string
+              type: array
+            ' runtime':
+              type: string
+            ' year':
+              format: int32
+              type: integer
+            title:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movie updated successfully
+          schema:
+            properties:
+              movie:
+                $ref: '#/definitions/data.Movie'
+            type: object
+        "400":
+          description: Bad request - malformed JSON or invalid data types
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid authentication token
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "403":
+          description: Forbidden - user account not activated or insufficient permissions
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Movie not found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "409":
+          description: Edit conflict - movie has been modified by another request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "422":
+          description: Unprocessable entity - validation errors
+          schema:
+            properties:
+              error:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        "429":
+          description: Too many requests - rate limit exceeded
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Movie
       tags:
       - Movies
   /tokens/activation:

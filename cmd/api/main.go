@@ -27,7 +27,7 @@ type application struct {
 }
 
 // @title           Gmoapi - Movie Management API
-// @version         1.0.1
+// @version         1.0
 // @description     A production-ready RESTful API for managing movies with comprehensive user authentication, role-based authorization, rate limiting, and email notifications.
 // @description
 // @description     ## Features

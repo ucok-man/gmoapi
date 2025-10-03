@@ -88,6 +88,7 @@ func NewConfig() (Config, error) {
 	flag.IntVar(&cfg.SMTP.Port, "smtp-port", cfg.SMTP.Port, "SMTP port")
 	flag.StringVar(&cfg.SMTP.Username, "smtp-username", cfg.SMTP.Username, "SMTP username")
 	flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
+	// flag.StringVar(&cfg.SMTP.ApiKey, "smtp-apikey", cfg.SMTP.ApiKey, "SMTP resend api key")
 	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (comma separated)", func(val string) error {

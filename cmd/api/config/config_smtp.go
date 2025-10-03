@@ -10,7 +10,7 @@ type SMTPConfig struct {
 	Port     int    `env:"GMOAPI_SMTP_PORT"`
 	Username string `env:"GMOAPI_SMTP_USERNAME"`
 	Password string `env:"GMOAPI_SMTP_PASSWORD"`
-	Sender   string `env:"GMOAPI_SMTP_SENDER" envDefault:"Gmoapi <no-reply@gmoapi.id>"`
+	Sender   string `env:"GMOAPI_SMTP_SENDER" envDefault:"Gmoapi <no-reply@gmoapi.ucokman.web.id>"`
 }
 
 func (c *SMTPConfig) Validate() error {

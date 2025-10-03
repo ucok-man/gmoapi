@@ -2,10 +2,10 @@
 nixPkgs = ["go"]
 
 [phases.install]
-cmds = ["npm install --legacy-peer-deps"]
+cmds = ["go mod download", "make tidy", "make audit"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["make build"]
 
 [start]
-cmd = "npm run serve"
+cmd = "make start"

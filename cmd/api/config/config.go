@@ -19,6 +19,7 @@ type Config struct {
 	DB      DatabaseConfig
 	Limiter LimiterConfig
 	SMTP    SMTPConfig
+	Cors    CorsConfig
 }
 
 // Validate validates the entire configuration
@@ -40,6 +41,11 @@ func (c *Config) Validate() error {
 
 	// Validate limiter configuration
 	if err := c.Limiter.Validate(); err != nil {
+		return err
+	}
+
+	// Validate cors configuration
+	if err := c.Cors.Validate(); err != nil {
 		return err
 	}
 
@@ -80,6 +86,11 @@ func NewConfig() (Config, error) {
 	flag.StringVar(&cfg.SMTP.Username, "smtp-username", cfg.SMTP.Username, "SMTP username")
 	flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
 	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (comma separated)", func(val string) error {
+		cfg.Cors.TrustedOrigins = strings.Split(val, ",")
+		return nil
+	})
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n\n", os.Args[0])

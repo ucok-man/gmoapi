@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["go", "gcc", "pkg-config"]
+nixPkgs = ["go"]
 
 [phases.install]
-cmds = ["go mod download", "make tidy", "make audit"]
+cmds = ["go mod download"]
 
 [phases.build]
-cmds = ["make build"]
+cmds = ["go build -ldflags='-s' -o=./bin/api ./cmd/api/"]
 
 [start]
-cmd = "make start"
+cmd = "./bin/api"

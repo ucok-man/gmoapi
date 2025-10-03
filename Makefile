@@ -42,14 +42,9 @@ migrate/new:
 migrate/up:
 	@GOOSE_DRIVER=postgres GOOSE_DBSTRING=${GMOAPI_DB_DSN} goose --dir ./migrations up
 
-## migrate/down: roll back migration by 1
+## migrate/reset: roll back all migration
 .PHONY: migrate/down
 migrate/down:
-	@GOOSE_DRIVER=postgres GOOSE_DBSTRING=${GMOAPI_DB_DSN} goose --dir ./migrations down
-
-## migrate/reset: roll back all migration
-.PHONY: migrate/reset
-migrate/reset:
 	@read -p "Are you sure you want to reset the DB? [y/N] " ans; \
 	if echo "$$ans" | grep -iq '^y$$'; then \
 		GOOSE_DRIVER=postgres GOOSE_DBSTRING=${GMOAPI_DB_DSN} goose --dir ./migrations reset; \

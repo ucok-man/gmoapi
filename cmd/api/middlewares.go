@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/tomasen/realip"
+	"github.com/ucok-man/gmoapi/internal/data"
+	"github.com/ucok-man/gmoapi/internal/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -102,6 +106,58 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 			mu.Unlock()
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Add the "Vary: Authorization" header to the response.
+		w.Header().Add("Vary", "Authorization")
+
+		// Retrieve the value of the Authorization header.
+		authorizationHeader := r.Header.Get("Authorization")
+
+		// If no Authorization header, use AnonymousUser.
+		if authorizationHeader == "" {
+			r = app.contextSetUser(r, data.AnonymousUser)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Check format: "Bearer <token>"
+		headerParts := strings.Split(authorizationHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		// Extract token.
+		token := headerParts[1]
+
+		// Validate token format.
+		v := validator.New()
+		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		// Get user from database.
+		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		if err != nil {
+			switch {
+			case errors.Is(err, data.ErrRecordNotFound):
+				app.invalidAuthenticationTokenResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+
+		// Add user to context.
+		r = app.contextSetUser(r, user)
+
+		// Continue next handler.
 		next.ServeHTTP(w, r)
 	})
 }

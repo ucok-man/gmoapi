@@ -103,7 +103,7 @@ func (m *Mailer) Send(recipient string, templateFile string, data any) error {
 		}
 		// If it didn't work, sleep for a short time and retry.
 		if i != 3 {
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(3 * time.Second)
 		}
 	}
 	return err

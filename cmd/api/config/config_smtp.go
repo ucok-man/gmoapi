@@ -9,7 +9,7 @@ type SMTPConfig struct {
 	Host     string `env:"GMOAPI_SMTP_HOST"`
 	Port     int    `env:"GMOAPI_SMTP_PORT"`
 	Username string `env:"GMOAPI_SMTP_USERNAME"`
-	Password string `env:"GMOAPI_SMTP_HOST"`
+	Password string `env:"GMOAPI_SMTP_PASSWORD"`
 	Sender   string `env:"GMOAPI_SMTP_SENDER" envDefault:"Gmoapi <no-reply@gmoapi.id>"`
 }
 

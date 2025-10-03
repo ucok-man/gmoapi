@@ -32,6 +32,12 @@ start:
 	@echo 'starting bin/api...'
 	@./bin/api
 
+## swag: generate swagger definition
+.PHONY: swag
+swag:
+	@echo 'generating swagger docs...'
+	@swag init -d cmd/api -o ./cmd/api/docs
+
 # ==================================================================================== #
 # QUALITY CONTROL
 # ==================================================================================== #

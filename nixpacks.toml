@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["go", "build-essential", "gcc"]
+nixPkgs = ["go", "gcc", "pkg-config"]
 
 [phases.install]
 cmds = ["go mod download", "make tidy", "make audit"]

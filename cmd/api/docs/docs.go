@@ -244,7 +244,7 @@ const docTemplate = `{
                 "tags": [
                     "Movies"
                 ],
-                "summary": "Create New Movie",
+                "summary": "Create New Movie (require movies:write permission)",
                 "parameters": [
                     {
                         "description": "Movie creation data",
@@ -472,7 +472,7 @@ const docTemplate = `{
                 "tags": [
                     "Movies"
                 ],
-                "summary": "Delete Movie",
+                "summary": "Delete Movie (require movies:write permission)",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -569,7 +569,7 @@ const docTemplate = `{
                 "tags": [
                     "Movies"
                 ],
-                "summary": "Update Movie",
+                "summary": "Update Movie (require movies:write permission)",
                 "parameters": [
                     {
                         "minimum": 1,

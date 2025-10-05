@@ -55,6 +55,15 @@ func (app *application) serve() error {
 
 	app.logger.Info("starting server", "addr", srv.Addr, "env", app.config.Env)
 
+	if app.config.Env == "development" {
+		app.logger.Info("api documentations", "url", fmt.Sprintf("http://localhost:%v/swagger", app.config.Port))
+		app.logger.Info("api metrics", "url", fmt.Sprintf("http://localhost:%v/debug/vars", app.config.Port))
+	} else {
+		app.logger.Info("api documentation", "url", fmt.Sprintf("https://%s/swagger", app.config.Host))
+		app.logger.Info("api metrics", "url", fmt.Sprintf("https://%s/debug/vars", app.config.Host))
+
+	}
+
 	// Calling Shutdown() on our server will cause ListenAndServe() to immediately
 	// return a http.ErrServerClosed error. So if we see this error, it is actually a
 	// good thing and an indication that the graceful shutdown has started. So we check

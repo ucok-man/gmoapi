@@ -114,7 +114,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary      Create New Movie
+// @Summary      Create New Movie (require movies:write permission)
 // @Description  Create a new movie entry in the catalog. All fields are required.
 // @Description
 // @Description  **Permissions Required:** `movies:write`
@@ -183,7 +183,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// @Summary      Update Movie
+// @Summary      Update Movie (require movies:write permission)
 // @Description  Update an existing movie using partial update (PATCH). Only provided fields will be updated. Uses optimistic locking to prevent concurrent modification conflicts.
 // @Description
 // @Description  **Permissions Required:** `movies:write`
@@ -275,7 +275,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// @Summary      Delete Movie
+// @Summary      Delete Movie (require movies:write permission)
 // @Description  Permanently delete a movie from the catalog by its ID. This action cannot be undone.
 // @Description
 // @Description  **Permissions Required:** `movies:write`

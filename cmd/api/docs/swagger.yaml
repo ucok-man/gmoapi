@@ -304,7 +304,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Create New Movie
+      summary: Create New Movie (require movies:write permission)
       tags:
       - Movies
   /movies/{id}:
@@ -368,7 +368,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Delete Movie
+      summary: Delete Movie (require movies:write permission)
       tags:
       - Movies
     get:
@@ -541,7 +541,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Update Movie
+      summary: Update Movie (require movies:write permission)
       tags:
       - Movies
   /tokens/activation:
